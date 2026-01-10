@@ -1,4 +1,4 @@
-package com.driverhub.app.ui.owner.navigation
+package com.driverhub.app.ui.driver.navigation
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.*
@@ -27,22 +27,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.zIndex
-import com.driverhub.app.ui.owner.cars.ActiveCarsBottomSheet
 import com.driverhub.app.ui.theme.*
-import com.driverhub.shared.presentation.owner.cars.ActiveCarsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OwnerBottomBar(
+fun DriverBottomBar(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    onNavigateToMap: (String) -> Unit = {},
-    activeCarsViewModel: ActiveCarsViewModel
+    onNavigateToMap: (String) -> Unit = {}
 ) {
     var isSpeedDialExpanded by remember { mutableStateOf(false) }
-    var showActiveCarsSheet by remember { mutableStateOf(false) }
     var isZoomAnimating by remember { mutableStateOf(false) }
     
     val zoomScale = remember { Animatable(1f) }
@@ -78,18 +74,6 @@ fun OwnerBottomBar(
                     modifier = Modifier.weight(1f)
                 )
                 
-                // Drivers
-                BottomNavItem(
-                    icon = Icons.Default.People,
-                    label = "Drivers",
-                    isSelected = selectedTab == "drivers",
-                    onClick = { onTabSelected("drivers") },
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Empty space for FAB
-                Spacer(modifier = Modifier.weight(1f))
-                
                 // Jobs
                 BottomNavItem(
                     icon = Icons.Default.Work,
@@ -99,12 +83,24 @@ fun OwnerBottomBar(
                     modifier = Modifier.weight(1f)
                 )
                 
-                // Notification
+                // Empty space for FAB
+                Spacer(modifier = Modifier.weight(1f))
+                
+                // Notifications
                 BottomNavItem(
                     icon = Icons.Default.Notifications,
-                    label = "Notification",
-                    isSelected = selectedTab == "notification",
-                    onClick = { onTabSelected("notification") },
+                    label = "Notifications",
+                    isSelected = selectedTab == "notifications",
+                    onClick = { onTabSelected("notifications") },
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Earnings
+                BottomNavItem(
+                    icon = Icons.Default.AccountBalanceWallet,
+                    label = "Earnings",
+                    isSelected = selectedTab == "earnings",
+                    onClick = { onTabSelected("earnings") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -117,42 +113,42 @@ fun OwnerBottomBar(
                 .offset(y = (-13).dp)
                 .zIndex(if (isZoomAnimating) 10f else 1f)
         ) {
-            // Speed Dial Button 1 - Left Diagonal
+            // Speed Dial Button 1 - Left Diagonal (Current Location)
             AnimatedSpeedDialButton(
                 visible = isSpeedDialExpanded,
                 targetOffsetX = (-80).dp,
                 targetOffsetY = (-80).dp,
-                icon = Icons.Default.DriveEta,
+                icon = Icons.Default.MyLocation,
                 containerColor = PrimaryBlue,
                 onClick = {
                     isSpeedDialExpanded = false
-                    showActiveCarsSheet = true
+                    onNavigateToMap("current_location")
                 }
             )
             
-            // Speed Dial Button 2 - Middle Up
+            // Speed Dial Button 2 - Middle Up (Navigate to Job)
             AnimatedSpeedDialButton(
                 visible = isSpeedDialExpanded,
                 targetOffsetX = 0.dp,
                 targetOffsetY = (-100).dp,
-                icon = Icons.Default.MyLocation,
+                icon = Icons.Default.Navigation,
                 containerColor = AccentOrange,
                 onClick = {
                     isSpeedDialExpanded = false
-                    onNavigateToMap("track_all")
+                    onNavigateToMap("navigate_job")
                 }
             )
             
-            // Speed Dial Button 3 - Right Diagonal
+            // Speed Dial Button 3 - Right Diagonal (Traffic View)
             AnimatedSpeedDialButton(
                 visible = isSpeedDialExpanded,
                 targetOffsetX = 80.dp,
                 targetOffsetY = (-80).dp,
-                icon = Icons.Default.Navigation,
+                icon = Icons.Default.Traffic,
                 containerColor = SuccessGreen,
                 onClick = {
                     isSpeedDialExpanded = false
-                    onNavigateToMap("track_mine")
+                    onNavigateToMap("traffic_view")
                 }
             )
             
@@ -264,21 +260,6 @@ fun OwnerBottomBar(
             }
         }
     }
-    
-    // Active Cars Bottom Sheet
-    if (showActiveCarsSheet) {
-        ActiveCarsBottomSheet(
-            viewModel = activeCarsViewModel,
-            onDismiss = { showActiveCarsSheet = false },
-            onTrackCar = { carId ->
-                showActiveCarsSheet = false
-                // TODO: Navigate to track specific car
-            },
-            onCallDriver = { phone ->
-                // TODO: Implement phone call
-            }
-        )
-    }
 }
 
 @Composable
@@ -332,7 +313,7 @@ private fun AnimatedSpeedDialButton(
 
 @Composable
 private fun BottomNavItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,

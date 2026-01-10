@@ -2,6 +2,7 @@ package com.driverhub.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -13,6 +14,7 @@ import androidx.core.view.WindowCompat
 import com.driverhub.app.ui.auth.*
 import com.driverhub.app.ui.common.SplashScreen
 import com.driverhub.app.ui.owner.navigation.OwnerMainScreen
+import com.driverhub.app.ui.driver.navigation.DriverMainScreen  // ← ADDED
 import com.driverhub.app.ui.theme.DriverHubTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         // Hardcoded role for testing (change to "driver" to switch POV)
-        val userRole = "owner"
+        val userRole = "driver"  // ← Change to "driver" to test driver UI
         
         // Set status bar and navigation bar to match app background
         val appBackgroundColor = Color(0xFFE8EDF2)
@@ -36,7 +38,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             DriverHubTheme {
                 var showSplash by remember { mutableStateOf(true) }
-                var currentScreen by remember { mutableStateOf("login") }
+                var navigationStack by remember { mutableStateOf(listOf("login")) }
+                
+                val currentScreen = navigationStack.lastOrNull() ?: "login"
+                
+                // Navigate to a new screen
+                val navigateTo: (String) -> Unit = { screen ->
+                    navigationStack = navigationStack + screen
+                }
+                
+                // Go back
+                val navigateBack: () -> Unit = {
+                    if (navigationStack.size > 1) {
+                        navigationStack = navigationStack.dropLast(1)
+                    } else {
+                        // If we're at the root (login), finish the activity
+                        finish()
+                    }
+                }
+                
+                // Handle system back gesture/button
+                BackHandler(enabled = !showSplash && navigationStack.size > 1) {
+                    navigateBack()
+                }
                 
                 when {
                     showSplash -> {
@@ -48,41 +72,41 @@ class MainActivity : ComponentActivity() {
                     currentScreen == "login" -> {
                         LoginScreen(
                             onLoginClick = { 
-                                currentScreen = "main"
+                                navigateTo("main")
                             },
                             onSignUpClick = { 
-                                currentScreen = "register" 
+                                navigateTo("register")
                             },
                             onForgotPasswordClick = {
-                                currentScreen = "forgot_password"
+                                navigateTo("forgot_password")
                             }
                         )
                     }
                     
                     currentScreen == "register" -> {
                         RegisterScreen(
-                            onBackClick = { 
-                                currentScreen = "login" 
-                            },
+                            onBackClick = navigateBack,
                             onLoginClick = { 
-                                currentScreen = "login" 
+                                // Go back to login (pop back to it)
+                                navigationStack = listOf("login")
                             },
                             onRegisterComplete = { 
-                                currentScreen = "login"
+                                // Go back to login after registration
+                                navigationStack = listOf("login")
                             }
                         )
                     }
                     
                     currentScreen == "forgot_password" -> {
                         ForgotPasswordScreen(
-                            onBackClick = {
-                                currentScreen = "login"
-                            },
+                            onBackClick = navigateBack,
                             onLoginClick = {
-                                currentScreen = "login"
+                                // Go back to login
+                                navigationStack = listOf("login")
                             },
                             onPasswordResetComplete = {
-                                currentScreen = "login"
+                                // Go back to login after reset
+                                navigationStack = listOf("login")
                             }
                         )
                     }
@@ -90,11 +114,7 @@ class MainActivity : ComponentActivity() {
                     currentScreen == "main" -> {
                         when (userRole) {
                             "owner" -> OwnerMainScreen()
-                            "driver" -> {
-                                Surface(modifier = Modifier.fillMaxSize()) {
-                                    androidx.compose.material3.Text("Driver Main Screen")
-                                }
-                            }
+                            "driver" -> DriverMainScreen()  // ← UPDATED: Use DriverMainScreen
                             else -> {
                                 Surface(modifier = Modifier.fillMaxSize()) {
                                     androidx.compose.material3.Text("Unknown Role")

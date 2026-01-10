@@ -1,4 +1,4 @@
-package com.driverhub.app.ui.owner.navigation
+package com.driverhub.app.ui.driver.navigation
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -11,7 +11,7 @@ import com.driverhub.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OwnerTopBar() {
+fun DriverTopBar() {
     TopAppBar(
         title = { },
         navigationIcon = {
@@ -35,7 +35,7 @@ fun OwnerTopBar() {
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = AppBackground  // Changed from SurfaceWhite
+            containerColor = AppBackground
         )
     )
 }
