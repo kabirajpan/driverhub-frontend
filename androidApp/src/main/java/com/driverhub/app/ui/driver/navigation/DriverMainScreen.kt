@@ -10,15 +10,26 @@ import com.driverhub.app.ui.driver.jobs.JobsScreen
 import com.driverhub.app.ui.driver.notifications.NotificationScreen
 import com.driverhub.app.ui.driver.earnings.EarningsScreen
 import com.driverhub.app.ui.driver.map.MapScreen
+import com.driverhub.app.ui.common.SideDrawer
+import kotlinx.coroutines.launch
 
 @Composable
-fun DriverMainScreen() {
+fun DriverMainScreen(
+    onLogout: () -> Unit = {}
+) {
     var selectedTab by remember { mutableStateOf("home") }
     var currentMapScreen by remember { mutableStateOf<String?>(null) }
     
-    // Handle system back gesture/button for map screens
-    BackHandler(enabled = currentMapScreen != null) {
-        currentMapScreen = null
+    // Drawer state
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    
+    // Handle system back gesture/button for map screens and drawer
+    BackHandler(enabled = currentMapScreen != null || drawerState.isOpen) {
+        when {
+            drawerState.isOpen -> scope.launch { drawerState.close() }
+            currentMapScreen != null -> currentMapScreen = null
+        }
     }
     
     // Show map screens if navigated
@@ -53,24 +64,67 @@ fun DriverMainScreen() {
         }
     }
     
-    Scaffold(
-        topBar = {
-            DriverTopBar()
-        },
-        bottomBar = {
-            DriverBottomBar(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
-                onNavigateToMap = { screen -> currentMapScreen = screen }
+    // Drawer with content
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            SideDrawer(
+                userName = "Johnathan Doe",
+                userRole = "DRIVER",
+                stat1Label = "TODAY'S EARNINGS",
+                stat1Value = "$142.50",
+                stat2Label = "JOBS DONE",
+                stat2Value = "12",
+                onDocumentsClick = {
+                    scope.launch { drawerState.close() }
+                    // TODO: Navigate to documents screen
+                },
+                onEarningsClick = {
+                    scope.launch { drawerState.close() }
+                    // TODO: Navigate to earnings history screen
+                },
+                onJobHistoryClick = {
+                    scope.launch { drawerState.close() }
+                    // TODO: Navigate to job history screen
+                },
+                onSupportClick = {
+                    scope.launch { drawerState.close() }
+                    // TODO: Navigate to support screen
+                },
+                onSettingsClick = {
+                    scope.launch { drawerState.close() }
+                    // TODO: Navigate to settings screen
+                },
+                onLogoutClick = {
+                    scope.launch { drawerState.close() }
+                    onLogout()
+                }
             )
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (selectedTab) {
-                "home" -> HomeScreen()
-                "jobs" -> JobsScreen()
-                "notifications" -> NotificationScreen()
-                "earnings" -> EarningsScreen()
+    ) {
+        Scaffold(
+            topBar = {
+                DriverTopBar(
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            },
+            bottomBar = {
+                DriverBottomBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it },
+                    onNavigateToMap = { screen -> currentMapScreen = screen }
+                )
+            }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                when (selectedTab) {
+                    "home" -> HomeScreen()
+                    "jobs" -> JobsScreen()
+                    "notifications" -> NotificationScreen()
+                    "earnings" -> EarningsScreen()
+                }
             }
         }
     }

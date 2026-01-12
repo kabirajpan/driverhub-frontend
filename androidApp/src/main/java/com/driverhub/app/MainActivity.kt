@@ -14,67 +14,122 @@ import androidx.core.view.WindowCompat
 import com.driverhub.app.ui.auth.*
 import com.driverhub.app.ui.common.SplashScreen
 import com.driverhub.app.ui.owner.navigation.OwnerMainScreen
-import com.driverhub.app.ui.driver.navigation.DriverMainScreen  // ← ADDED
+import com.driverhub.app.ui.driver.navigation.DriverMainScreen
 import com.driverhub.app.ui.theme.DriverHubTheme
+import com.driverhub.app.ui.theme.AppBackground
+import com.driverhub.shared.domain.repository.TokenStorage
+import com.driverhub.shared.domain.usecase.auth.SessionUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+
+    private val tokenStorage: TokenStorage by inject()
+    private val sessionUseCase: SessionUseCase by inject()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Hardcoded role for testing (change to "driver" to switch POV)
-        val userRole = "driver"  // ← Change to "driver" to test driver UI
-        
+
         // Set status bar and navigation bar to match app background
         val appBackgroundColor = Color(0xFFE8EDF2)
         window.statusBarColor = appBackgroundColor.toArgb()
         window.navigationBarColor = appBackgroundColor.toArgb()
-        
+
         // Make status bar icons dark (visible on light background)
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = true
             isAppearanceLightNavigationBars = true
         }
-        
+
         setContent {
             DriverHubTheme {
                 var showSplash by remember { mutableStateOf(true) }
-                var navigationStack by remember { mutableStateOf(listOf("login")) }
-                
-                val currentScreen = navigationStack.lastOrNull() ?: "login"
-                
+                var currentScreen by remember { mutableStateOf("login") }
+                var userRole by remember { mutableStateOf<String?>(null) }
+                var isCheckingSession by remember { mutableStateOf(true) }
+                var isLoggingOut by remember { mutableStateOf(false) }
+                var sessionCheckTrigger by remember { mutableStateOf(0) }
+
+                // Check for existing session on startup AND after logout
+                LaunchedEffect(sessionCheckTrigger) {
+                    val accessToken = tokenStorage.getAccessToken()
+                    val savedRole = tokenStorage.getUserRole()
+
+                    if (!accessToken.isNullOrBlank() && !savedRole.isNullOrBlank()) {
+                        userRole = savedRole
+                        currentScreen = "main"
+                    } else {
+                        userRole = null
+                        currentScreen = "login"
+                    }
+                    isCheckingSession = false
+                }
+
                 // Navigate to a new screen
                 val navigateTo: (String) -> Unit = { screen ->
-                    navigationStack = navigationStack + screen
+                    currentScreen = screen
                 }
-                
+
                 // Go back
                 val navigateBack: () -> Unit = {
-                    if (navigationStack.size > 1) {
-                        navigationStack = navigationStack.dropLast(1)
-                    } else {
-                        // If we're at the root (login), finish the activity
-                        finish()
+                    when (currentScreen) {
+                        "register", "forgot_password" -> currentScreen = "login"
+                        "login" -> finish()
+                        else -> {
+                            currentScreen = "login"
+                        }
                     }
                 }
-                
+
+                // Handle logout
+                val handleLogout: () -> Unit = {
+                    if (!isLoggingOut) {
+                        isLoggingOut = true
+                        
+                        CoroutineScope(Dispatchers.Main).launch {
+                            try {
+                                tokenStorage.clearTokens()
+                                sessionUseCase.logout()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                userRole = null
+                                currentScreen = "login"
+                                isLoggingOut = false
+                                sessionCheckTrigger++
+                            }
+                        }
+                    }
+                }
+
                 // Handle system back gesture/button
-                BackHandler(enabled = !showSplash && navigationStack.size > 1) {
+                BackHandler(enabled = !showSplash && currentScreen != "main" && !isLoggingOut) {
                     navigateBack()
                 }
-                
+
                 when {
                     showSplash -> {
-                        SplashScreen(onSplashComplete = { 
-                            showSplash = false 
+                        SplashScreen(onSplashComplete = {
+                            showSplash = false
                         })
                     }
-                    
-                    currentScreen == "login" -> {
+
+                    isCheckingSession -> {
+                        Surface(modifier = Modifier.fillMaxSize(), color = AppBackground) {
+                            // Empty screen while checking session
+                        }
+                    }
+
+                    isLoggingOut -> {
+                        // Show login screen immediately during logout
                         LoginScreen(
-                            onLoginClick = { 
+                            onLoginSuccess = { role ->
+                                userRole = role
                                 navigateTo("main")
                             },
-                            onSignUpClick = { 
+                            onSignUpClick = {
                                 navigateTo("register")
                             },
                             onForgotPasswordClick = {
@@ -82,45 +137,71 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    
-                    currentScreen == "register" -> {
-                        RegisterScreen(
-                            onBackClick = navigateBack,
-                            onLoginClick = { 
-                                // Go back to login (pop back to it)
-                                navigationStack = listOf("login")
+
+                    currentScreen == "login" -> {
+                        LoginScreen(
+                            onLoginSuccess = { role ->
+                                userRole = role
+                                navigateTo("main")
                             },
-                            onRegisterComplete = { 
-                                // Go back to login after registration
-                                navigationStack = listOf("login")
+                            onSignUpClick = {
+                                navigateTo("register")
+                            },
+                            onForgotPasswordClick = {
+                                navigateTo("forgot_password")
                             }
                         )
                     }
-                    
+
+                    currentScreen == "register" -> {
+                        RegisterScreen(
+                            onBackClick = navigateBack,
+                            onLoginClick = {
+                                currentScreen = "login"
+                            },
+                            onRegisterComplete = {
+                                currentScreen = "login"
+                            }
+                        )
+                    }
+
                     currentScreen == "forgot_password" -> {
                         ForgotPasswordScreen(
                             onBackClick = navigateBack,
                             onLoginClick = {
-                                // Go back to login
-                                navigationStack = listOf("login")
-                            },
-                            onPasswordResetComplete = {
-                                // Go back to login after reset
-                                navigationStack = listOf("login")
+                                currentScreen = "login"
                             }
                         )
                     }
-                    
-                    currentScreen == "main" -> {
-                        when (userRole) {
-                            "owner" -> OwnerMainScreen()
-                            "driver" -> DriverMainScreen()  // ← UPDATED: Use DriverMainScreen
-                            else -> {
-                                Surface(modifier = Modifier.fillMaxSize()) {
-                                    androidx.compose.material3.Text("Unknown Role")
+
+                    currentScreen == "main" && userRole != null -> {
+                        key(userRole) {
+                            when (userRole) {
+                                "CAR_OWNER" -> OwnerMainScreen(onLogout = handleLogout)
+                                "DRIVER" -> DriverMainScreen(onLogout = handleLogout)
+                                else -> {
+                                    Surface(modifier = Modifier.fillMaxSize()) {
+                                        androidx.compose.material3.Text("Unknown Role: $userRole")
+                                    }
                                 }
                             }
                         }
+                    }
+
+                    // Fallback - if we're in an invalid state, show login
+                    else -> {
+                        LoginScreen(
+                            onLoginSuccess = { role ->
+                                userRole = role
+                                navigateTo("main")
+                            },
+                            onSignUpClick = {
+                                navigateTo("register")
+                            },
+                            onForgotPasswordClick = {
+                                navigateTo("forgot_password")
+                            }
+                        )
                     }
                 }
             }

@@ -11,15 +11,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import com.driverhub.app.ui.theme.*
 import com.driverhub.app.ui.common.*
+import com.driverhub.shared.presentation.auth.login.LoginViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginClick: () -> Unit = {},
+    onLoginSuccess: (String) -> Unit,
     onSignUpClick: () -> Unit = {},
-    onForgotPasswordClick: () -> Unit = {}
+    onForgotPasswordClick: () -> Unit = {},
+    viewModel: LoginViewModel = koinViewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Reset ViewModel state when screen appears to prevent using cached success state
+    DisposableEffect(Unit) {
+        viewModel.resetState()
+        onDispose { }
+    }
+    
+    // Navigate on success - use flag to prevent duplicate navigation
+    var hasNavigated by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isSuccess, uiState.user) {
+        if (uiState.isSuccess && uiState.user != null && !hasNavigated) {
+            hasNavigated = true
+            onLoginSuccess(uiState.user!!.role.name)
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -75,10 +92,11 @@ fun LoginScreen(
 
             // Email Input Field
             EmailTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = uiState.emailPhone,
+                onValueChange = viewModel::onEmailPhoneChanged,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = "example@driverhub.com"
+                placeholder = "example@driverhub.com",
+                enabled = !uiState.isLoading
             )
 
             Spacer(modifier = Modifier.height(AppSpacing.Large))
@@ -96,10 +114,11 @@ fun LoginScreen(
 
             // Password Input Field
             PasswordTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = uiState.password,
+                onValueChange = viewModel::onPasswordChanged,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = "••••••••"
+                placeholder = "••••••••",
+                enabled = !uiState.isLoading
             )
 
             Spacer(modifier = Modifier.height(AppSpacing.Medium))
@@ -109,21 +128,38 @@ fun LoginScreen(
                 text = "Forgot Password?",
                 fontSize = AppFontSize.Body,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                color = PrimaryBlue,
+                color = if (uiState.isLoading) TextTertiary else PrimaryBlue,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(end = AppSpacing.ExtraSmall)
-                    .clickable { onForgotPasswordClick() },
+                    .clickable(enabled = !uiState.isLoading) {
+                        onForgotPasswordClick()
+                    },
                 textAlign = TextAlign.End
             )
 
             Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge))
 
+            // Error Message
+            if (uiState.error != null) {
+                Text(
+                    text = uiState.error!!,
+                    fontSize = AppFontSize.Body,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(AppSpacing.Default))
+            }
+
             // Log In Button
             PrimaryButton(
                 text = "Log In",
-                onClick = onLoginClick,
-                icon = Icons.Default.ArrowForward
+                onClick = viewModel::login,
+                icon = Icons.Default.ArrowForward,
+                isLoading = uiState.isLoading,
+                enabled = uiState.emailPhone.isNotBlank() &&
+                         uiState.password.isNotBlank()
             )
 
             Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge2))
@@ -133,19 +169,20 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge))
 
-            // Social Login Buttons
+            // Social Login Buttons (disabled during loading)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppSpacing.Medium)
             ) {
                 GoogleButton(
-                    onClick = { },
-                    modifier = Modifier.weight(1f)
+                    onClick = { /* TODO: Google login */ },
+                    modifier = Modifier.weight(1f),
+                    enabled = !uiState.isLoading
                 )
-
                 FacebookButton(
-                    onClick = { },
-                    modifier = Modifier.weight(1f)
+                    onClick = { /* TODO: Facebook login */ },
+                    modifier = Modifier.weight(1f),
+                    enabled = !uiState.isLoading
                 )
             }
 
@@ -165,8 +202,10 @@ fun LoginScreen(
                     text = "Sign Up",
                     fontSize = AppFontSize.Body,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    color = AccentOrange,
-                    modifier = Modifier.clickable { onSignUpClick() }
+                    color = if (uiState.isLoading) TextTertiary else AccentOrange,
+                    modifier = Modifier.clickable(enabled = !uiState.isLoading) {
+                        onSignUpClick()
+                    }
                 )
             }
         }

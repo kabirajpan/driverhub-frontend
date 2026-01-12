@@ -32,10 +32,11 @@ fun ActiveCarsBottomSheet(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
-    // Trigger refresh when sheet opens
-    LaunchedEffect(Unit) {
-        viewModel.refreshCars()
-    }
+    // TEMPORARY: Commented out until backend is ready
+    // This was causing 401 errors when opening bottom sheet
+    // LaunchedEffect(Unit) {
+    //     viewModel.refreshCars()
+    // }
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -138,11 +139,12 @@ fun ActiveCarsBottomSheet(
                                 subtitle = uiState.error ?: "Unknown error"
                             )
                             Spacer(modifier = Modifier.height(AppSpacing.Default))
-                            Button(
-                                onClick = { viewModel.loadCars() }
-                            ) {
-                                Text("Retry")
-                            }
+                            // TEMPORARY: Commented out retry button until backend is ready
+                            // Button(
+                            //     onClick = { viewModel.loadCars() }
+                            // ) {
+                            //     Text("Retry")
+                            // }
                         }
                     }
                     

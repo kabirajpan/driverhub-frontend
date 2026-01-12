@@ -24,6 +24,7 @@ fun SocialButton(
     iconTint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     backgroundColor: Color = SurfaceWhite,
     outlined: Boolean = true
 ) {
@@ -31,19 +32,21 @@ fun SocialButton(
         OutlinedButton(
             onClick = onClick,
             modifier = modifier.height(AppSizes.ButtonHeightMedium),
+            enabled = enabled,
             shape = AppShapes.ButtonMedium,
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = backgroundColor
+                containerColor = backgroundColor,
+                disabledContainerColor = AppBackground
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
                 width = AppBorder.Thin,
-                brush = androidx.compose.ui.graphics.SolidColor(BorderLight)
+                brush = androidx.compose.ui.graphics.SolidColor(if (enabled) BorderLight else BorderMedium)
             )
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = iconTint,
+                tint = if (enabled) iconTint else TextTertiary,
                 modifier = Modifier.size(AppSizes.IconDefault)
             )
             Spacer(modifier = Modifier.width(AppSpacing.Small))
@@ -51,22 +54,24 @@ fun SocialButton(
                 text = text,
                 fontSize = AppFontSize.BodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = TextPrimary
+                color = if (enabled) TextPrimary else TextTertiary
             )
         }
     } else {
         Button(
             onClick = onClick,
             modifier = modifier.height(AppSizes.ButtonHeightMedium),
+            enabled = enabled,
             shape = AppShapes.ButtonMedium,
             colors = ButtonDefaults.buttonColors(
-                containerColor = backgroundColor
+                containerColor = backgroundColor,
+                disabledContainerColor = BorderMedium
             )
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = iconTint,
+                tint = if (enabled) iconTint else TextTertiary,
                 modifier = Modifier.size(AppSizes.IconDefault)
             )
             Spacer(modifier = Modifier.width(AppSpacing.Small))
@@ -74,7 +79,7 @@ fun SocialButton(
                 text = text,
                 fontSize = AppFontSize.BodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = TextWhite
+                color = if (enabled) TextWhite else TextTertiary
             )
         }
     }
@@ -87,6 +92,7 @@ fun SocialButton(
 fun GoogleButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     text: String = "Google"
 ) {
     SocialButton(
@@ -95,6 +101,7 @@ fun GoogleButton(
         iconTint = GoogleRed,
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         outlined = true
     )
 }
@@ -106,6 +113,7 @@ fun GoogleButton(
 fun FacebookButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     text: String = "Facebook"
 ) {
     SocialButton(
@@ -114,6 +122,7 @@ fun FacebookButton(
         iconTint = TextWhite,
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         backgroundColor = FacebookBlue,
         outlined = false
     )
@@ -126,6 +135,7 @@ fun FacebookButton(
 fun AppleButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     text: String = "Apple"
 ) {
     SocialButton(
@@ -134,6 +144,7 @@ fun AppleButton(
         iconTint = AppleBlack,
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         outlined = true
     )
 }
@@ -147,8 +158,9 @@ fun SocialLoginRow(
     onGoogleClick: () -> Unit,
     onSecondaryClick: () -> Unit,
     modifier: Modifier = Modifier,
-    secondaryButton: @Composable (Modifier, () -> Unit) -> Unit = { mod, click ->
-        AppleButton(onClick = click, modifier = mod)
+    enabled: Boolean = true,
+    secondaryButton: @Composable (Modifier, Boolean, () -> Unit) -> Unit = { mod, isEnabled, click ->
+        AppleButton(onClick = click, modifier = mod, enabled = isEnabled)
     }
 ) {
     Row(
@@ -157,10 +169,11 @@ fun SocialLoginRow(
     ) {
         GoogleButton(
             onClick = onGoogleClick,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            enabled = enabled
         )
         
-        secondaryButton(Modifier.weight(1f), onSecondaryClick)
+        secondaryButton(Modifier.weight(1f), enabled, onSecondaryClick)
     }
 }
 

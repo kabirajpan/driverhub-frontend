@@ -13,24 +13,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import com.driverhub.app.ui.theme.*
 import com.driverhub.app.ui.common.*
+import com.driverhub.shared.presentation.auth.register.RegisterViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onBackClick: () -> Unit = {},
     onLoginClick: () -> Unit = {},
-    onRegisterComplete: () -> Unit = {}
+    onRegisterComplete: () -> Unit = {},
+    viewModel: RegisterViewModel = koinViewModel()
 ) {
     var currentStep by remember { mutableStateOf(1) }
-    var email by remember { mutableStateOf("") }
-    var selectedRole by remember { mutableStateOf("") }
-    var fullName by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
     var agreedToTerms by remember { mutableStateOf(false) }
+    
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Navigate on success
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            onRegisterComplete()
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -50,17 +56,20 @@ fun RegisterScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (currentStep > 1) {
-                            currentStep--
-                        } else {
-                            onBackClick()
-                        }
-                    }) {
+                    IconButton(
+                        onClick = {
+                            if (currentStep > 1) {
+                                currentStep--
+                            } else {
+                                onBackClick()
+                            }
+                        },
+                        enabled = !uiState.isLoading
+                    ) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = if (uiState.isLoading) TextTertiary else TextPrimary
                         )
                     }
                 },
@@ -74,7 +83,6 @@ fun RegisterScreen(
                 targetState = currentStep,
                 transitionSpec = {
                     if (targetState > initialState) {
-                        // Forward: slide in from right, slide out to left
                         slideInHorizontally(
                             initialOffsetX = { fullWidth -> fullWidth },
                             animationSpec = tween(300)
@@ -84,7 +92,6 @@ fun RegisterScreen(
                             animationSpec = tween(300)
                         ) + fadeOut(animationSpec = tween(300))
                     } else {
-                        // Backward: slide in from left, slide out to right
                         slideInHorizontally(
                             initialOffsetX = { fullWidth -> -fullWidth },
                             animationSpec = tween(300)
@@ -99,29 +106,33 @@ fun RegisterScreen(
             ) { step ->
                 when (step) {
                     1 -> EmailStepContent(
-                        email = email,
-                        onEmailChange = { email = it },
+                        email = uiState.emailPhone,
+                        onEmailChange = viewModel::onEmailPhoneChanged,
                         onNextClick = { currentStep = 2 },
                         onLoginClick = onLoginClick,
-                        currentStep = currentStep
+                        currentStep = currentStep,
+                        isLoading = uiState.isLoading
                     )
                     2 -> RoleSelectionContent(
-                        selectedRole = selectedRole,
-                        onRoleSelected = { selectedRole = it },
+                        selectedRole = uiState.selectedRole,
+                        onRoleSelected = viewModel::onRoleSelected,
                         onContinueClick = { currentStep = 3 },
-                        currentStep = currentStep
+                        currentStep = currentStep,
+                        isLoading = uiState.isLoading
                     )
                     3 -> AccountSetupContent(
-                        fullName = fullName,
-                        onFullNameChange = { fullName = it },
-                        password = password,
-                        onPasswordChange = { password = it },
-                        confirmPassword = confirmPassword,
-                        onConfirmPasswordChange = { confirmPassword = it },
+                        fullName = uiState.name,
+                        onFullNameChange = viewModel::onNameChanged,
+                        password = uiState.password,
+                        onPasswordChange = viewModel::onPasswordChanged,
+                        confirmPassword = uiState.confirmPassword,
+                        onConfirmPasswordChange = viewModel::onConfirmPasswordChanged,
                         agreedToTerms = agreedToTerms,
                         onAgreedToTermsChange = { agreedToTerms = it },
-                        onCreateAccountClick = onRegisterComplete,
-                        currentStep = currentStep
+                        onCreateAccountClick = viewModel::register,
+                        currentStep = currentStep,
+                        isLoading = uiState.isLoading,
+                        error = uiState.error
                     )
                 }
             }
@@ -162,7 +173,8 @@ private fun EmailStepContent(
     onEmailChange: (String) -> Unit,
     onNextClick: () -> Unit,
     onLoginClick: () -> Unit,
-    currentStep: Int
+    currentStep: Int,
+    isLoading: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -172,7 +184,6 @@ private fun EmailStepContent(
     ) {
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge))
 
-        // Icon
         IconContainer(
             icon = Icons.Default.Email,
             containerColor = BlueTint,
@@ -203,47 +214,43 @@ private fun EmailStepContent(
 
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge2))
 
-        // Email Input
         EmailTextField(
             value = email,
             onValueChange = onEmailChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = "Email or Phone Number"
+            placeholder = "Email or Phone Number",
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge2))
 
-        // Social Login Divider
         SocialLoginDivider()
 
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge))
 
-        // Social Buttons
         SocialLoginRow(
-            onGoogleClick = { },
-            onSecondaryClick = { }
+            onGoogleClick = { /* TODO: Google registration */ },
+            onSecondaryClick = { /* TODO: Facebook registration */ },
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Progress Indicator
         StepIndicator(currentStep = currentStep)
 
         Spacer(modifier = Modifier.height(AppSpacing.Default))
 
-        // Next Button
         PrimaryButton(
             text = "Next Step",
             onClick = onNextClick,
             icon = Icons.Default.ArrowForward,
-            enabled = email.isNotEmpty()
+            enabled = email.isNotEmpty() && !isLoading
         )
 
-        Spacer(modifier = Modifier.height(AppSpacing.Large))  // 20dp (was 16dp - just 4dp increase)
+        Spacer(modifier = Modifier.height(AppSpacing.Large))
 
-// Login Text
-Row(
-    modifier = Modifier.padding(bottom = AppSpacing.ExtraLarge2), 
+        Row(
+            modifier = Modifier.padding(bottom = AppSpacing.ExtraLarge2),
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
@@ -255,8 +262,8 @@ Row(
                 text = "Log in",
                 fontSize = AppFontSize.Body,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                color = PrimaryBlue,
-                modifier = Modifier.clickable { onLoginClick() }
+                color = if (isLoading) TextTertiary else PrimaryBlue,
+                modifier = Modifier.clickable(enabled = !isLoading) { onLoginClick() }
             )
         }
     }
@@ -264,10 +271,11 @@ Row(
 
 @Composable
 private fun RoleSelectionContent(
-    selectedRole: String,
+    selectedRole: String?,
     onRoleSelected: (String) -> Unit,
     onContinueClick: () -> Unit,
-    currentStep: Int
+    currentStep: Int,
+    isLoading: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -277,7 +285,6 @@ private fun RoleSelectionContent(
     ) {
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge))
 
-        // Icon
         IconContainer(
             icon = Icons.Default.Person,
             containerColor = OrangeTint,
@@ -307,46 +314,42 @@ private fun RoleSelectionContent(
 
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge2))
 
-        // Driver Option
         RoleCard(
             icon = Icons.Default.DirectionsCar,
             iconColor = PrimaryBlue,
             title = "I am a Driver",
             subtitle = "Looking for driving jobs and opportunities.",
-            isSelected = selectedRole == "driver",
-            onClick = { onRoleSelected("driver") }
+            isSelected = selectedRole == "DRIVER",
+            onClick = { onRoleSelected("DRIVER") },
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(AppSpacing.Default))
 
-        // Car Owner Option
         RoleCard(
             icon = Icons.Default.Key,
             iconColor = AccentOrange,
             title = "I am a Car Owner",
             subtitle = "Looking to hire professional drivers.",
-            isSelected = selectedRole == "owner",
-            onClick = { onRoleSelected("owner") }
+            isSelected = selectedRole == "CAR_OWNER",
+            onClick = { onRoleSelected("CAR_OWNER") },
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Progress Indicator
         StepIndicator(currentStep = currentStep)
 
         Spacer(modifier = Modifier.height(AppSpacing.Default))
 
-// Continue Button
-PrimaryButton(
-    text = "Continue",
-    onClick = onContinueClick,
-    enabled = selectedRole.isNotEmpty()
-)
+        PrimaryButton(
+            text = "Continue",
+            onClick = onContinueClick,
+            enabled = selectedRole != null && !isLoading
+        )
 
-Spacer(modifier = Modifier.height(AppSpacing.Default))  // 16dp
-
-// Match Step 1's position with larger spacing
-Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge5))  // 60dp
+        Spacer(modifier = Modifier.height(AppSpacing.Default))
+        Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge5))
     }
 }
 
@@ -361,7 +364,9 @@ private fun AccountSetupContent(
     agreedToTerms: Boolean,
     onAgreedToTermsChange: (Boolean) -> Unit,
     onCreateAccountClick: () -> Unit,
-    currentStep: Int
+    currentStep: Int,
+    isLoading: Boolean,
+    error: String?
 ) {
     Column(
         modifier = Modifier
@@ -371,7 +376,6 @@ private fun AccountSetupContent(
     ) {
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge))
 
-        // Icon
         IconContainer(
             icon = Icons.Default.Security,
             containerColor = GreenTint,
@@ -401,37 +405,49 @@ private fun AccountSetupContent(
 
         Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge2))
 
-        // Full Name
         AppTextField(
             value = fullName,
             onValueChange = onFullNameChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = "John Doe",
             leadingIcon = Icons.Default.Person,
-            trailingIcon = if (fullName.isNotEmpty()) Icons.Default.CheckCircle else null
+            trailingIcon = if (fullName.isNotEmpty()) Icons.Default.CheckCircle else null,
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(AppSpacing.Default))
 
-        // Password
         PasswordTextField(
             value = password,
             onValueChange = onPasswordChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = "••••••••"
+            placeholder = "••••••••",
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(AppSpacing.Default))
 
-        // Confirm Password
         PasswordTextField(
             value = confirmPassword,
             onValueChange = onConfirmPasswordChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = "••••••••"
+            placeholder = "••••••••",
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(AppSpacing.Large))
+
+        // Error Message
+        if (error != null) {
+            Text(
+                text = error,
+                fontSize = AppFontSize.Body,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(AppSpacing.Default))
+        }
 
         // Terms Checkbox
         Row(
@@ -441,6 +457,7 @@ private fun AccountSetupContent(
             Checkbox(
                 checked = agreedToTerms,
                 onCheckedChange = onAgreedToTermsChange,
+                enabled = !isLoading,
                 colors = CheckboxDefaults.colors(
                     checkedColor = PrimaryBlue
                 )
@@ -459,7 +476,7 @@ private fun AccountSetupContent(
                         text = "Terms of Service",
                         fontSize = AppFontSize.Small,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                        color = PrimaryBlue
+                        color = if (isLoading) TextTertiary else PrimaryBlue
                     )
                     Text(
                         text = " and ",
@@ -470,7 +487,7 @@ private fun AccountSetupContent(
                         text = "Privacy Policy",
                         fontSize = AppFontSize.Small,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                        color = PrimaryBlue
+                        color = if (isLoading) TextTertiary else PrimaryBlue
                     )
                     Text(
                         text = ".",
@@ -483,21 +500,22 @@ private fun AccountSetupContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Progress Indicator
         StepIndicator(currentStep = currentStep)
 
         Spacer(modifier = Modifier.height(AppSpacing.Default))
 
-// Create Account Button
-SecondaryButton(
-    text = "Create Account",
-    onClick = onCreateAccountClick,
-    enabled = fullName.isNotEmpty() && password.isNotEmpty() && 
-             confirmPassword.isNotEmpty() && agreedToTerms
-)
-Spacer(modifier = Modifier.height(AppSpacing.Default))  // 16dp
-
-// Match Step 1's position with larger spacing
-Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge5))  // 60dp
+        SecondaryButton(
+            text = "Create Account",
+            onClick = onCreateAccountClick,
+            enabled = fullName.isNotEmpty() && 
+                     password.isNotEmpty() && 
+                     confirmPassword.isNotEmpty() && 
+                     agreedToTerms && 
+                     !isLoading,
+            isLoading = isLoading
+        )
+        
+        Spacer(modifier = Modifier.height(AppSpacing.Default))
+        Spacer(modifier = Modifier.height(AppSpacing.ExtraLarge5))
     }
 }

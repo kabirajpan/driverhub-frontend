@@ -3,6 +3,7 @@ plugins {
     kotlin("android")
     kotlin("plugin.compose")
 }
+
 android {
     namespace = "com.driverhub.app"
     compileSdk = 34
@@ -27,10 +28,17 @@ android {
         jvmTarget = "1.8"
     }
 }
+
 dependencies {
     implementation(project(":shared"))
+    
+    // Compose
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.compose.ui:ui:1.6.8")
     implementation("androidx.compose.material3:material3:1.2.1")
-    implementation("androidx.compose.material:material-icons-extended:1.6.8")  // Added this
+    implementation("androidx.compose.material:material-icons-extended:1.6.8")
+    
+    // Koin for Dependency Injection
+    implementation("io.insert-koin:koin-android:3.5.3")
+    implementation("io.insert-koin:koin-androidx-compose:3.5.3")
 }

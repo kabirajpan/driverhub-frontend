@@ -106,11 +106,12 @@ fun PasswordTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "••••••••",
     label: String? = null,
+    enabled: Boolean = true,
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
-
+    
     AppTextField(
         value = value,
         onValueChange = onValueChange,
@@ -121,6 +122,7 @@ fun PasswordTextField(
         trailingIcon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
         onTrailingIconClick = { passwordVisible = !passwordVisible },
         keyboardType = KeyboardType.Password,
+        enabled = enabled,
         isError = isError,
         errorMessage = errorMessage
     )
@@ -137,6 +139,7 @@ fun EmailTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "example@driverhub.com",
     label: String? = null,
+    enabled: Boolean = true,
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
@@ -149,6 +152,7 @@ fun EmailTextField(
         leadingIcon = Icons.Default.Email,
         trailingIcon = if (value.isNotEmpty() && value.contains("@")) Icons.Default.CheckCircle else null,
         keyboardType = KeyboardType.Email,
+        enabled = enabled,
         isError = isError,
         errorMessage = errorMessage
     )
@@ -165,6 +169,7 @@ fun PhoneTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "+91 12345 67890",
     label: String? = null,
+    enabled: Boolean = true,
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
@@ -176,6 +181,7 @@ fun PhoneTextField(
         label = label,
         leadingIcon = Icons.Default.Phone,
         keyboardType = KeyboardType.Phone,
+        enabled = enabled,
         isError = isError,
         errorMessage = errorMessage
     )
@@ -191,6 +197,7 @@ fun SearchTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "Search...",
+    enabled: Boolean = true,
     onClearClick: (() -> Unit)? = null
 ) {
     AppTextField(
@@ -201,6 +208,7 @@ fun SearchTextField(
         leadingIcon = Icons.Default.Search,
         trailingIcon = if (value.isNotEmpty() && onClearClick != null) Icons.Default.Close else null,
         onTrailingIconClick = onClearClick,
-        keyboardType = KeyboardType.Text
+        keyboardType = KeyboardType.Text,
+        enabled = enabled
     )
 }

@@ -2,7 +2,7 @@ package com.driverhub.app.ui.owner.navigation
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,14 +11,16 @@ import com.driverhub.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OwnerTopBar() {
+fun OwnerTopBar(
+    onMenuClick: () -> Unit = {}
+) {
     TopAppBar(
         title = { },
         navigationIcon = {
-            IconButton(onClick = { /* Profile click */ }) {
+            IconButton(onClick = onMenuClick) {
                 Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile",
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
                     tint = TextPrimary,
                     modifier = Modifier.size(AppSizes.IconLarge)
                 )
@@ -35,7 +37,7 @@ fun OwnerTopBar() {
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = AppBackground  // Changed from SurfaceWhite
+            containerColor = AppBackground
         )
     )
 }

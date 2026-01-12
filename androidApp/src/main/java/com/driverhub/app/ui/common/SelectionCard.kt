@@ -24,18 +24,19 @@ fun SelectionCard(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     iconBackgroundColor: Color = PrimaryBlue
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(AppSizes.AppIconMedium)
-            .clickable { onClick() }
+            .clickable(enabled = enabled) { onClick() }
             .then(
                 if (isSelected) {
                     Modifier.border(
                         width = AppBorder.Medium,
-                        color = PrimaryBlue,
+                        color = if (enabled) PrimaryBlue else BorderMedium,
                         shape = AppShapes.CardLarge
                     )
                 } else {
@@ -47,8 +48,8 @@ fun SelectionCard(
                 }
             ),
         shape = AppShapes.CardLarge,
-        color = SurfaceWhite,
-        shadowElevation = if (isSelected) AppElevation.Level1 else AppElevation.None
+        color = if (enabled) SurfaceWhite else AppBackground,
+        shadowElevation = if (isSelected && enabled) AppElevation.Level1 else AppElevation.None
     ) {
         Row(
             modifier = Modifier
@@ -60,7 +61,7 @@ fun SelectionCard(
             Surface(
                 modifier = Modifier.size(AppSizes.IconHuge),
                 shape = androidx.compose.foundation.shape.CircleShape,
-                color = iconBackgroundColor
+                color = if (enabled) iconBackgroundColor else BorderMedium
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -69,14 +70,14 @@ fun SelectionCard(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = TextWhite,
+                        tint = if (enabled) TextWhite else TextTertiary,
                         modifier = Modifier.size(AppSizes.IconDefault)
                     )
                 }
             }
-
+            
             Spacer(modifier = Modifier.width(AppSpacing.Default))
-
+            
             // Text Content
             Column(
                 modifier = Modifier.weight(1f)
@@ -85,25 +86,55 @@ fun SelectionCard(
                     text = title,
                     fontSize = AppFontSize.Subtitle,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = if (enabled) TextPrimary else TextTertiary
                 )
                 Spacer(modifier = Modifier.height(AppSpacing.ExtraSmall))
                 Text(
                     text = subtitle,
                     fontSize = AppFontSize.Body,
-                    color = TextSecondary
+                    color = if (enabled) TextSecondary else TextTertiary
                 )
             }
-
+            
             // Radio Button
             RadioButton(
                 selected = isSelected,
                 onClick = onClick,
+                enabled = enabled,
                 colors = RadioButtonDefaults.colors(
                     selectedColor = AccentOrange,
-                    unselectedColor = BorderMedium
+                    unselectedColor = BorderMedium,
+                    disabledSelectedColor = BorderMedium,
+                    disabledUnselectedColor = BorderMedium
                 )
             )
         }
     }
+}
+
+/**
+ * Role Card Component - Variant for role selection
+ * Used in registration flow
+ */
+@Composable
+fun RoleCard(
+    icon: ImageVector,
+    iconColor: Color,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    SelectionCard(
+        icon = icon,
+        title = title,
+        subtitle = subtitle,
+        isSelected = isSelected,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        iconBackgroundColor = if (enabled) iconColor else BorderMedium
+    )
 }

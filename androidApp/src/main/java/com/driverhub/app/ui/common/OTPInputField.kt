@@ -24,7 +24,8 @@ fun OTPInputField(
     otp: String,
     onOtpChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    digitCount: Int = 6
+    digitCount: Int = 6,
+    enabled: Boolean = true
 ) {
     BasicTextField(
         value = otp,
@@ -33,6 +34,7 @@ fun OTPInputField(
                 onOtpChange(newValue)
             }
         },
+        enabled = enabled,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         decorationBox = {
             Row(
@@ -45,8 +47,8 @@ fun OTPInputField(
                         else -> otp[index].toString()
                     }
                     
-                    val isFocused = index == otp.length
-
+                    val isFocused = index == otp.length && enabled
+                    
                     Surface(
                         modifier = Modifier
                             .width(48.dp)
@@ -61,13 +63,13 @@ fun OTPInputField(
                                 } else {
                                     Modifier.border(
                                         width = AppBorder.Thin,
-                                        color = if (char.isEmpty()) BorderLight else PrimaryBlue,
+                                        color = if (char.isEmpty()) BorderLight else if (enabled) PrimaryBlue else BorderMedium,
                                         shape = AppShapes.ButtonMedium
                                     )
                                 }
                             ),
                         shape = AppShapes.ButtonMedium,
-                        color = SurfaceWhite
+                        color = if (enabled) SurfaceWhite else AppBackground
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -77,7 +79,7 @@ fun OTPInputField(
                                 text = char,
                                 fontSize = AppFontSize.HeadingLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary,
+                                color = if (enabled) TextPrimary else TextTertiary,
                                 textAlign = TextAlign.Center
                             )
                         }

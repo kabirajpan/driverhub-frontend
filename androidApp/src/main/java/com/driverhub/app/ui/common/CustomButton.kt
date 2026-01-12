@@ -20,6 +20,7 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     icon: ImageVector? = null,
     height: Dp = AppSizes.ButtonHeightLarge
 ) {
@@ -28,7 +29,7 @@ fun PrimaryButton(
         modifier = modifier
             .fillMaxWidth()
             .height(height),
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         shape = AppShapes.ButtonMedium,
         colors = ButtonDefaults.buttonColors(
             containerColor = PrimaryBlue,
@@ -41,17 +42,25 @@ fun PrimaryButton(
             pressedElevation = AppElevation.Level2
         )
     ) {
-        Text(
-            text = text,
-            style = AppTextStyles.ButtonText
-        )
-        if (icon != null) {
-            Spacer(modifier = Modifier.width(AppSpacing.Small))
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(AppSizes.IconMedium)
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(AppSizes.IconMedium),
+                color = TextWhite,
+                strokeWidth = AppBorder.Medium
             )
+        } else {
+            Text(
+                text = text,
+                style = AppTextStyles.ButtonText
+            )
+            if (icon != null) {
+                Spacer(modifier = Modifier.width(AppSpacing.Small))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(AppSizes.IconMedium)
+                )
+            }
         }
     }
 }
@@ -66,6 +75,7 @@ fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     icon: ImageVector? = null,
     height: Dp = AppSizes.ButtonHeightLarge
 ) {
@@ -74,7 +84,7 @@ fun SecondaryButton(
         modifier = modifier
             .fillMaxWidth()
             .height(height),
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         shape = AppShapes.ButtonMedium,
         colors = ButtonDefaults.buttonColors(
             containerColor = AccentOrange,
@@ -87,17 +97,25 @@ fun SecondaryButton(
             pressedElevation = AppElevation.Level2
         )
     ) {
-        Text(
-            text = text,
-            style = AppTextStyles.ButtonText
-        )
-        if (icon != null) {
-            Spacer(modifier = Modifier.width(AppSpacing.Small))
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(AppSizes.IconMedium)
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(AppSizes.IconMedium),
+                color = TextWhite,
+                strokeWidth = AppBorder.Medium
             )
+        } else {
+            Text(
+                text = text,
+                style = AppTextStyles.ButtonText
+            )
+            if (icon != null) {
+                Spacer(modifier = Modifier.width(AppSpacing.Small))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(AppSizes.IconMedium)
+                )
+            }
         }
     }
 }
@@ -112,6 +130,7 @@ fun OutlineButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     icon: ImageVector? = null,
     iconTint: Color = TextPrimary,
     height: Dp = AppSizes.ButtonHeightMedium
@@ -119,7 +138,7 @@ fun OutlineButton(
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.height(height),
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         shape = AppShapes.ButtonMedium,
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = SurfaceWhite,
@@ -132,21 +151,29 @@ fun OutlineButton(
             brush = androidx.compose.ui.graphics.SolidColor(BorderLight)
         )
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(AppSizes.IconDefault)
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(AppSizes.IconDefault),
+                color = PrimaryBlue,
+                strokeWidth = AppBorder.Medium
             )
-            Spacer(modifier = Modifier.width(AppSpacing.Small))
+        } else {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(AppSizes.IconDefault)
+                )
+                Spacer(modifier = Modifier.width(AppSpacing.Small))
+            }
+            Text(
+                text = text,
+                fontSize = AppFontSize.BodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = TextPrimary
+            )
         }
-        Text(
-            text = text,
-            fontSize = AppFontSize.BodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = TextPrimary
-        )
     }
 }
 

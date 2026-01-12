@@ -27,13 +27,21 @@ class ActiveCarsViewModel(
     val uiState: StateFlow<ActiveCarsUiState> = _uiState.asStateFlow()
     
     init {
-        loadCars()
+        // TEMPORARY: Commented out until backend is ready
+        // This was causing 401 errors on logout
+        // loadCars()
+        
+        // TODO: Uncomment when backend cars endpoints are implemented
     }
     
     /**
      * Load all cars and calculate counts
      */
     fun loadCars() {
+        // TEMPORARY: Skip API call until backend is ready
+        // When backend is ready, uncomment the code below
+        
+        /*
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             
@@ -73,12 +81,15 @@ class ActiveCarsViewModel(
                 }
             }
         }
+        */
     }
     
     /**
      * Refresh cars data (pull-to-refresh)
      */
     fun refreshCars() {
+        // TEMPORARY: Skip until backend is ready
+        /*
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
             
@@ -118,6 +129,7 @@ class ActiveCarsViewModel(
                 }
             }
         }
+        */
     }
     
     /**
