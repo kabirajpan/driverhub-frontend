@@ -10,6 +10,7 @@ import com.driverhub.app.ui.driver.jobs.JobsScreen
 import com.driverhub.app.ui.driver.notifications.NotificationScreen
 import com.driverhub.app.ui.driver.earnings.EarningsScreen
 import com.driverhub.app.ui.driver.map.MapScreen
+import com.driverhub.app.ui.settings.SettingsScreen
 import com.driverhub.app.ui.common.SideDrawer
 import kotlinx.coroutines.launch
 
@@ -19,19 +20,30 @@ fun DriverMainScreen(
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     var currentMapScreen by remember { mutableStateOf<String?>(null) }
-    
+    var showSettings by remember { mutableStateOf(false) }
+
     // Drawer state
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    
-    // Handle system back gesture/button for map screens and drawer
-    BackHandler(enabled = currentMapScreen != null || drawerState.isOpen) {
+
+    // Handle system back gesture/button for map screens, settings, and drawer
+    BackHandler(enabled = currentMapScreen != null || showSettings || drawerState.isOpen) {
         when {
             drawerState.isOpen -> scope.launch { drawerState.close() }
+            showSettings -> showSettings = false
             currentMapScreen != null -> currentMapScreen = null
         }
     }
-    
+
+    // Show settings screen if navigated
+    if (showSettings) {
+        SettingsScreen(
+            onBackClick = { showSettings = false },
+            onLogout = onLogout
+        )
+        return
+    }
+
     // Show map screens if navigated
     when (currentMapScreen) {
         "current_location" -> {
@@ -63,7 +75,7 @@ fun DriverMainScreen(
             return
         }
     }
-    
+
     // Drawer with content
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -92,8 +104,10 @@ fun DriverMainScreen(
                     // TODO: Navigate to support screen
                 },
                 onSettingsClick = {
-                    scope.launch { drawerState.close() }
-                    // TODO: Navigate to settings screen
+                    scope.launch { 
+                        drawerState.close() 
+                        showSettings = true
+                    }
                 },
                 onLogoutClick = {
                     scope.launch { drawerState.close() }

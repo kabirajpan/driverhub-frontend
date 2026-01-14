@@ -5,19 +5,19 @@ import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
 /**
  * HTTP Client Factory
  * Creates configured Ktor HttpClient instance
- * NOTE: Auth headers must be added per-request since TokenStorage is async
+ * 
+ * NOTE: Token refresh is handled manually in AuthApiImpl when 401 is detected
+ * This is simpler and more compatible than using Ktor plugins
  */
 object HttpClientFactory {
     
-    fun create(): HttpClient {
+    fun create(tokenStorage: TokenStorage): HttpClient {
         return HttpClient {
             // JSON Serialization
             install(ContentNegotiation) {
@@ -42,7 +42,6 @@ object HttpClientFactory {
             }
             
             // CRITICAL: Set to false to handle errors manually
-            // This prevents Ktor from throwing exceptions with IP addresses and URLs
             expectSuccess = false
         }
     }

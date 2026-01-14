@@ -9,6 +9,7 @@ import com.driverhub.shared.domain.usecase.owner.cars.*
 import com.driverhub.shared.presentation.auth.login.LoginViewModel
 import com.driverhub.shared.presentation.auth.register.RegisterViewModel
 import com.driverhub.shared.presentation.auth.forgotpassword.ForgotPasswordViewModel
+import com.driverhub.shared.presentation.settings.ChangePasswordViewModel
 import com.driverhub.shared.presentation.owner.cars.ActiveCarsViewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -18,24 +19,24 @@ import org.koin.dsl.module
  * Defines how to create and wire all dependencies
  */
 val appModule = module {
-    
     // ========== HTTP Client ==========
-    single { HttpClientFactory.create() }
+    // UPDATED: Pass TokenStorage to enable automatic token refresh
+    single { HttpClientFactory.create(tokenStorage = get()) }
     
     // ========== API ==========
-    single<AuthApi> { 
+    single<AuthApi> {
         AuthApiImpl(
             client = get(),
-            tokenStorage = get()  // ← FIXED: Added tokenStorage parameter
-        ) 
+            tokenStorage = get()
+        )
     }
     
     // ========== Repositories ==========
-    single<AuthRepository> { 
+    single<AuthRepository> {
         AuthRepositoryImpl(
             authApi = get(),
             tokenStorage = get()
-        ) 
+        )
     }
     
     single<CarRepository> { CarRepositoryImpl() }
@@ -45,6 +46,7 @@ val appModule = module {
     factory { RegisterUseCase(authRepository = get()) }
     factory { ForgotPasswordUseCase(authRepository = get()) }
     factory { SessionUseCase(authRepository = get()) }
+    factory { ChangePasswordUseCase(authRepository = get()) }
     
     // ========== Use Cases - Owner ==========
     factory { GetActiveCarsUseCase(carRepository = get()) }
@@ -54,9 +56,10 @@ val appModule = module {
     factory { LoginViewModel(loginUseCase = get()) }
     factory { RegisterViewModel(registerUseCase = get()) }
     factory { ForgotPasswordViewModel(forgotPasswordUseCase = get()) }
+    factory { ChangePasswordViewModel(changePasswordUseCase = get()) }
     
     // ========== ViewModels - Owner ==========
-    factory { 
+    factory {
         ActiveCarsViewModel(
             getActiveCarsUseCase = get(),
             getAllCarsUseCase = get()

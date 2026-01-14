@@ -17,6 +17,7 @@ val TextPrimary = Color(0xFF1A1A1A)
 val TextSecondary = Color(0xFF6B7280)
 val TextTertiary = Color(0xFF9CA3AF)
 val TextWhite = Color.White
+val CardWhite = Color.White
 
 // Border & Divider Colors
 val BorderLight = Color(0xFFE5E7EB)
@@ -35,3 +36,4 @@ val OverlayLight = Color(0x40FFFFFF) // 25% opacity white
 val BlueTint = Color(0xFF1565F5).copy(alpha = 0.1f)
 val OrangeTint = Color(0xFFFF6B35).copy(alpha = 0.1f)
 val GreenTint = Color(0xFF10B981).copy(alpha = 0.1f)
+

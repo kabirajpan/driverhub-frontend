@@ -12,6 +12,7 @@ import com.driverhub.app.ui.owner.map.TrackAllCarsScreen
 import com.driverhub.app.ui.owner.map.TrackMyCarScreen
 import com.driverhub.app.ui.owner.map.FullMapScreen
 import com.driverhub.app.ui.owner.notifications.NotificationScreen
+import com.driverhub.app.ui.settings.SettingsScreen
 import com.driverhub.app.ui.common.SideDrawer
 import com.driverhub.shared.data.repository.CarRepositoryImpl
 import com.driverhub.shared.domain.usecase.owner.cars.GetActiveCarsUseCase
@@ -25,36 +26,45 @@ fun OwnerMainScreen(
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     var currentMapScreen by remember { mutableStateOf<String?>(null) }
-    
+    var showSettings by remember { mutableStateOf(false) }
+
     // Drawer state
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    
+
     // Create ViewModel instance ONLY ONCE and dispose properly
-    // LaunchedEffect with Unit key ensures this runs only on first composition
     val activeCarsViewModel = remember {
         val repository = CarRepositoryImpl()
         val getActiveCarsUseCase = GetActiveCarsUseCase(repository)
         val getAllCarsUseCase = GetAllCarsUseCase(repository)
         ActiveCarsViewModel(getActiveCarsUseCase, getAllCarsUseCase)
     }
-    
+
     // Cleanup ViewModel when screen is disposed
     DisposableEffect(Unit) {
         onDispose {
-            // This ensures ViewModel is cleaned up when OwnerMainScreen is removed
             activeCarsViewModel.onCleared()
         }
     }
-    
-    // Handle system back gesture/button for map screens and drawer
-    BackHandler(enabled = currentMapScreen != null || drawerState.isOpen) {
+
+    // Handle system back gesture/button for map screens, settings, and drawer
+    BackHandler(enabled = currentMapScreen != null || showSettings || drawerState.isOpen) {
         when {
             drawerState.isOpen -> scope.launch { drawerState.close() }
+            showSettings -> showSettings = false
             currentMapScreen != null -> currentMapScreen = null
         }
     }
-    
+
+    // Show settings screen if navigated
+    if (showSettings) {
+        SettingsScreen(
+            onBackClick = { showSettings = false },
+            onLogout = onLogout
+        )
+        return
+    }
+
     // Show map screens if navigated
     when (currentMapScreen) {
         "track_all" -> {
@@ -76,7 +86,7 @@ fun OwnerMainScreen(
             return
         }
     }
-    
+
     // Drawer with content
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -105,13 +115,14 @@ fun OwnerMainScreen(
                     // TODO: Navigate to support screen
                 },
                 onSettingsClick = {
-                    scope.launch { drawerState.close() }
-                    // TODO: Navigate to settings screen
+                    scope.launch {
+                        drawerState.close()
+                        showSettings = true
+                    }
                 },
                 onLogoutClick = {
-                    scope.launch { 
+                    scope.launch {
                         drawerState.close()
-                        // Small delay to ensure drawer closes before logout
                         kotlinx.coroutines.delay(200)
                         onLogout()
                     }
